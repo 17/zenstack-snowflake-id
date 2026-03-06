@@ -159,4 +159,4 @@ export class SnowflakePlugin {
   }
 }
 
-export const SnowflakeIDGenerator = (options) => new SnowflakePlugin(options || DEFAULT_OPTIONS)
+export const SnowflakeIDGenerator = (options) => new CreateSnowflakeID(options || DEFAULT_OPTIONS)

@@ -1,6 +1,6 @@
 {
   "name": "zenstack-snowflake-id",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A ZenStack plugin that provides automatic Snowflake ID generation for database models. This plugin allows you to mark fields with `@snowflake` attribute to automatically generate distributed unique identifiers.",
   "keywords": [
     "zenstack",
@@ -17,7 +17,7 @@
   },
   "license": "MIT",
   "author": "17",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
