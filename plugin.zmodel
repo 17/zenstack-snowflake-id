@@ -1,0 +1,8 @@
+/**
+ * 雪花ID生成器属性
+ * 适用于 BigInt 类型字段，自动生成分布式唯一ID
+ * @param dataCenterId 数据中心ID (0-31)，默认0
+ * @param workerId 工作节点ID (0-31)，默认0
+ * @param epoch 自定义纪元（毫秒时间戳），默认从2026-02-28开始
+ */
+attribute @snowflake(workerId: Int?, epoch: Int?) @@@targetField([IntField, BigIntField])
