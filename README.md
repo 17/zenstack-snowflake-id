@@ -72,7 +72,8 @@ When creating your ZenStack client, include the Snowflake ID plugin:
 import { ZenStackClient } from "@zenstackhq/orm";
 import { SqlJsDialect } from "@zenstackhq/orm/dialects/sql.js";
 import initSqlJs from "sql.js";
-import { SnowflakePlugin } from "./plugins/snowflake-id";
+
+import SnowflakePlugin from 'zenstack-snowflake-id';
 import { schema } from "./zenstack/schema";
 
 async function main() {
@@ -80,7 +81,11 @@ async function main() {
 
   const db = new ZenStackClient(schema, {
     dialect: new SqlJsDialect({ sqlJs: new SQL.Database() }),
-    plugins: [new SnowflakePlugin()],
+    plugins: [new SnowflakePlugin({
+        epoch: +new Date('2026-02-28'),
+        workerId: 0,
+        mode: 63
+    })],
   });
 
   // Push database schema
@@ -100,24 +105,79 @@ async function main() {
 main();
 ```
 
+## Standalone Usage (Without Plugin)
+
+You can use the `SnowflakeGenerator` class directly for standalone ID generation:
+
+```typescript
+import { SnowflakeGenerator } from 'zenstack-snowflake-id';
+
+// Create a generator instance
+const generator = new SnowflakeGenerator({
+  epoch: +new Date('2026-02-28'), // Custom epoch (required)
+  workerId: 1,                     // Worker ID (optional, default: 0)
+  mode: 63,                        // Mode: 53 or 63 (optional, default: 63)
+});
+
+// Generate IDs
+const id1 = generator.nextId();                    // Use default config
+const id2 = generator.nextId({ workerId: 2 });     // Override workerId for this call
+const id3 = generator.nextId({ epoch: customEpoch }); // Override epoch for this call
+
+// Parse an existing ID
+const parsed = generator.parse(id1);
+console.log(parsed.time);       // Date object of when the ID was generated
+console.log(parsed.workerId);   // Worker ID used to generate this ID
+console.log(parsed.sequence);   // Sequence number within that millisecond
+
+// Parse with custom epoch
+const parsedWithCustomEpoch = generator.parse(id1, customEpoch);
+```
+
 ## Configuration Options
 
 ### Plugin Options (in schema.zmodel)
 
-- `workerId` (optional, default: 0): Default worker ID (0-1023 for 63-bit mode, 0-7 for 53-bit mode)
-- `epoch` (optional, default: 2026-02-28): Custom epoch timestamp in milliseconds
+- `workerId` (optional): Override the default worker ID for this specific field (0-1023 for 63-bit mode, 0-7 for 53-bit mode)
+- `epoch` (optional): Override the default epoch for this specific field (milliseconds timestamp)
 
 ### Runtime Plugin Options (when creating ZenStackClient)
 
-- `workerId` (optional, default: 0): Default worker ID
-- `epoch` (optional, default: 2026-02-28): Custom epoch timestamp
-- `mode` (optional, default: 63): ID generation mode - 53 or 63 bits
-- `placeholder` (optional, default: 0): Placeholder value that triggers ID generation
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `workerId` | `number` | `0` | Default worker ID |
+| `epoch` | `number` | `+new Date('2026-02-28')` | Custom epoch timestamp in milliseconds |
+| `mode` | `53 \| 63` | `63` | ID generation mode |
+| `placeholder` | `number` | `0` | Placeholder value that triggers ID generation |
 
-### Field-level Options
+### SnowflakeGenerator Constructor Options
 
-- `workerId` (optional): Override the default worker ID for this specific field
-- `epoch` (optional): Override the default epoch for this specific field
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `epoch` | `number` | Yes | - | Custom epoch timestamp in milliseconds |
+| `workerId` | `number` | No | `0` | Default worker ID |
+| `mode` | `53 \| 63` | No | `63` | ID generation mode |
+
+### NextIdOptions (for nextId method)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `workerId` | `number` | Instance's workerId | Override worker ID for this call |
+| `epoch` | `number` | Instance's epoch | Override epoch for this call |
+
+## Exported Types
+
+```typescript
+import {
+  SnowflakeGenerator,
+  NextIdOptions,
+} from 'zenstack-snowflake-id';
+
+interface NextIdOptions {
+  epoch?: number;
+  workerId?: number;
+}
+```
 
 ## Snowflake ID Structure
 
@@ -131,18 +191,38 @@ main();
 - **3 bits**: Worker ID (0-7) - supports up to 8 worker nodes
 - **10 bits**: Sequence number (0-1023) - 1024 IDs per millisecond per worker
 
-### SnowflakePlugin Class
+## API Reference
+
+### SnowflakeGenerator Class
 
 ```typescript
-class SnowflakePlugin implements RuntimePlugin {
-  constructor(options?: {
-    workerId?: number;
-    epoch?: number;
-    mode?: 53 | 63;
-    placeholder?: 0
+class SnowflakeGenerator {
+  constructor(options: {
+    epoch: number;           // Required: epoch timestamp in milliseconds
+    workerId?: number;       // Optional: default 0
+    mode?: 53 | 63;          // Optional: default 63
   });
+
+  nextId(options?: NextIdOptions): string | number | bigint;
+  parse(id: number | bigint | string, customEpoch?: number | bigint): {
+    time: Date;
+    workerId: number;
+    sequence: number;
+  };
 }
 ```
+
+### SnowflakeIDGenerator Factory Function
+
+```typescript
+function SnowflakeIDGenerator(options?: Partial<SnowflakeGeneratorConstructorOptions>): SnowflakeGenerator
+```
+
+Convenience factory function with pre-configured defaults.
+
+### SnowflakeTransformer Class
+
+Internal Kysely query transformer for automatic ID replacement.
 
 ## License
 
