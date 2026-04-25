@@ -19,9 +19,24 @@ const DEFAULT_OPTIONS = {
   placeholder: 0
 }
 
-export const SnowflakeIDGenerator = (options?: any) => new SnowflakeGenerator({
-  ...DEFAULT_OPTIONS,
-  ...options || {}
+export type SnowflakeGeneratorOptions = {
+  epoch?: number;
+  workerId?: number;
+  mode?: 53 | 63;
+}
+
+export type SnowflakePluginOptions = SnowflakeGeneratorOptions & {
+  placeholder?: number;
+}
+
+export const SnowflakeIDGenerator = ({
+  epoch,
+  workerId = DEFAULT_OPTIONS.workerId,
+  mode = DEFAULT_OPTIONS.mode as 63 | 53
+}: SnowflakeGeneratorOptions) => new SnowflakeGenerator({
+  epoch,
+  workerId,
+  mode,
 })
 
 export class SnowflakeTransformer extends OperationNodeTransformer {
@@ -129,12 +144,12 @@ export class SnowflakeTransformer extends OperationNodeTransformer {
   }
 }
 
-export default (options?: any): AnyPlugin => {
+export default (options?: SnowflakePluginOptions): AnyPlugin => {
   const newOptions = {
     ...DEFAULT_OPTIONS,
     ...options || {}
   }
-  const idFactory = new SnowflakeGenerator(newOptions)
+  const idFactory = new SnowflakeGenerator({ epoch: newOptions.epoch, workerId: newOptions.workerId, mode: newOptions.mode as 63 | 53 } )
   return definePlugin({
     id: 'snowflake-id',
     name: 'Snowflake ID Plugin',
