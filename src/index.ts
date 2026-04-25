@@ -1,4 +1,4 @@
-import { definePlugin } from '@zenstackhq/orm'
+import { definePlugin, type AnyPlugin } from '@zenstackhq/orm'
 import {
   OperationNodeTransformer,
   InsertQueryNode,
@@ -129,7 +129,7 @@ export class SnowflakeTransformer extends OperationNodeTransformer {
   }
 }
 
-export default (options?: any) => {
+export default (options?: any): AnyPlugin => {
   const newOptions = {
     ...DEFAULT_OPTIONS,
     ...options || {}
